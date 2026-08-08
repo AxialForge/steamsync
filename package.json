@@ -1,0 +1,30 @@
+{
+  "name": "steamsync",
+  "version": "0.1.0",
+  "description": "One-way, master-is-local mirror that backs up your Steam library (and any folder) to a NAS — fast, and never deletes on the destination.",
+  "author": "AxialForge <37514365+AxialForge@users.noreply.github.com>",
+  "license": "MIT",
+  "private": true,
+  "main": "src/main/main.js",
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "build:renderer": "vite build",
+    "preview": "vite preview --port 4173 --strictPort",
+    "start": "npm run build:renderer && electron .",
+    "build:win": "npm run build:renderer && electron-builder --win",
+    "build:portable": "npm run build:renderer && electron-builder --win portable",
+    "test": "node --test test/"
+  },
+  "dependencies": {
+    "chokidar": "^3.6.0",
+    "electron-updater": "^6.3.9"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "vite": "^6.0.7"
+  }
+}

@@ -1,0 +1,39 @@
+appId: com.axialforge.steamsync
+productName: SteamSync
+copyright: Copyright © AxialForge
+
+directories:
+  buildResources: build
+  output: release
+
+# Only ship the CJS main process + the built renderer. Vite bundles React into
+# dist/renderer, so react/react-dom are dev-only and never land in the asar.
+files:
+  - src/main/**/*
+  - dist/renderer/**/*
+  - package.json
+
+extraMetadata:
+  main: src/main/main.js
+
+# artifactName is deliberately space-free: a space desyncs the on-disk file, the
+# URL in latest.yml, and the uploaded asset, which 404s the auto-updater.
+win:
+  target:
+    - target: nsis
+    - target: portable
+  artifactName: ${name}-${version}-${arch}.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  artifactName: ${name}-Setup-${version}.${ext}
+
+portable:
+  artifactName: ${name}-${version}-portable.${ext}
+
+publish:
+  provider: github
+  owner: AxialForge
+  repo: steamsync
