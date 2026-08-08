@@ -22,6 +22,10 @@ export const Icon = {
   download: (p) => <S {...p}><path d="M12 3v12" /><polyline points="7 10 12 15 17 10" /><path d="M5 21h14" /></S>,
   refresh: (p) => <S {...p}><polyline points="23 4 23 10 17 10" /><path d="M20.5 15a9 9 0 1 1-2-9.7L23 10" /></S>,
   folderOpen: (p) => <S {...p}><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2H3z" /><path d="M3 9h18l-2 9a2 2 0 0 1-2 1.6H6.9A2 2 0 0 1 5 18z" /></S>,
+  info: (p) => <S {...p}><circle cx="12" cy="12" r="9" /><line x1="12" y1="11" x2="12" y2="16" /><line x1="12" y1="8" x2="12.01" y2="8" /></S>,
+  external: (p) => <S {...p}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" /></S>,
+  github: (p) => <S {...p}><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.4 3.4 0 0 0-.9-2.6c3-.3 6.2-1.5 6.2-6.7A5.2 5.2 0 0 0 20 4.8a4.9 4.9 0 0 0-.1-3.6s-1.1-.3-3.5 1.3a12 12 0 0 0-6.4 0C7.6.9 6.5 1.2 6.5 1.2A4.9 4.9 0 0 0 6.4 4.8 5.2 5.2 0 0 0 5 8.4c0 5.2 3.2 6.4 6.2 6.7a3.4 3.4 0 0 0-.9 2.6V22" /></S>,
+  shield2: (p) => <S {...p}><path d="M12 2 4 5v6c0 5 3.4 8.4 8 11 4.6-2.6 8-6 8-11V5z" /></S>,
   logo: ({ size = 24 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <circle cx="12" cy="12" r="10" fill="var(--accent)" />

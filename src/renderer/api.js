@@ -35,7 +35,7 @@ const stub = {
   },
   sync: { scan: async () => ({ items: [], totals: { bytesToCopy: 0, filesToCopy: 0, orphanCount: 0, itemCount: 0 } }), start: async () => ({ started: true }), cancel: async () => true, state: async () => ({ state: 'idle', running: false, lastScan: null }) },
   folders: { choose: async () => null },
-  openPath: async () => {}, reveal: async () => {},
+  openPath: async () => {}, reveal: async () => {}, openExternal: async () => {},
   log: { recent: async () => [] },
   updater: { check: async () => {}, install: async () => {} },
   artworkUrl: (appid) => `https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/${appid}/library_600x900.jpg`,

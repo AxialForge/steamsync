@@ -22,18 +22,36 @@ function configure({ steamPath, cacheDir }) {
   if (CACHE_DIR) fs.mkdirSync(CACHE_DIR, { recursive: true })
 }
 
-function localSteamCandidates(appid) {
-  if (!STEAM_PATH) return []
-  const base = path.win32.join(STEAM_PATH, 'appcache', 'librarycache')
-  return [
-    // newer Steam client: per-appid subfolder
-    path.win32.join(base, appid, 'library_600x900.jpg'),
-    path.win32.join(base, appid, 'library_600x900_2x.jpg'),
-    path.win32.join(base, appid, 'header.jpg'),
-    // older Steam client: flat, appid-prefixed
-    path.win32.join(base, `${appid}_library_600x900.jpg`),
-    path.win32.join(base, `${appid}_header.jpg`)
-  ]
+// Newer Steam clients store art as librarycache/<appid>/<hash>/library_capsule.jpg
+// (nested), while older ones used librarycache/<appid>_library_600x900.jpg (flat).
+// Search both, preferring the portrait capsule.
+function findLocal(appid) {
+  const candidates = []
+  if (STEAM_PATH) {
+    const base = path.win32.join(STEAM_PATH, 'appcache', 'librarycache')
+    const dir = path.win32.join(base, appid)
+    const priority = ['library_capsule.jpg', 'library_600x900.jpg', 'library_600x900_2x.jpg', 'library_header.jpg', 'header.jpg']
+    const found = []
+    const walk = (d, depth) => {
+      if (depth > 2) return
+      let ents
+      try { ents = fs.readdirSync(d, { withFileTypes: true }) } catch { return }
+      for (const e of ents) {
+        const ab = path.win32.join(d, e.name)
+        if (e.isDirectory()) walk(ab, depth + 1)
+        else found.push(ab)
+      }
+    }
+    if (fs.existsSync(dir)) walk(dir, 0)
+    for (const name of priority) {
+      const hit = found.find((f) => path.basename(f).toLowerCase() === name)
+      if (hit) candidates.push(hit)
+    }
+    // legacy flat names
+    candidates.push(path.win32.join(base, `${appid}_library_600x900.jpg`))
+    candidates.push(path.win32.join(base, `${appid}_header.jpg`))
+  }
+  return candidates.find((c) => fs.existsSync(c)) || null
 }
 
 function cdnCandidates(appid) {
@@ -65,16 +83,12 @@ async function ensure(appid, { allowNetwork = true } = {}) {
   const cached = path.win32.join(CACHE_DIR, `${appid}.jpg`)
   if (fs.existsSync(cached) && fs.statSync(cached).size > 0) return cached
 
-  // de-dupe concurrent requests for the same appid
   if (inflight.has(appid)) return inflight.get(appid)
   const task = (async () => {
-    // 2) copy from Steam's own cache
-    for (const cand of localSteamCandidates(appid)) {
-      if (fs.existsSync(cand)) {
-        try { await fsp.copyFile(cand, cached); return cached } catch { /* try next */ }
-      }
+    const local = findLocal(appid)
+    if (local) {
+      try { await fsp.copyFile(local, cached); return cached } catch { /* fall through to CDN */ }
     }
-    // 3) CDN
     if (allowNetwork) {
       for (const url of cdnCandidates(appid)) {
         try { await download(url, cached); return cached } catch { /* try next url */ }
@@ -87,4 +101,4 @@ async function ensure(appid, { allowNetwork = true } = {}) {
   return task
 }
 
-module.exports = { configure, ensure }
+module.exports = { configure, ensure, findLocal }

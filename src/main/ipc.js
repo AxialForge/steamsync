@@ -54,6 +54,7 @@ function registerIpc(ctx) {
 
   handle('path:open', (p) => shell.openPath(p))
   handle('path:reveal', (p) => { shell.showItemInFolder(p); return true })
+  handle('url:open', (u) => { if (/^https?:\/\//i.test(u)) shell.openExternal(u); return true })
 
   handle('log:recent', () => log.recent())
 

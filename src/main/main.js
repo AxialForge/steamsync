@@ -1,8 +1,9 @@
 'use strict'
 
-const { app, BrowserWindow, Tray, Menu, protocol, nativeImage } = require('electron')
+const { app, BrowserWindow, Tray, Menu, protocol, nativeImage, net } = require('electron')
 const path = require('node:path')
 const fs = require('node:fs')
+const { pathToFileURL } = require('node:url')
 
 const settings = require('./settings')
 const log = require('./util/logger')
@@ -97,9 +98,11 @@ async function boot() {
       const allowNetwork = settings.all().showArtwork !== false
       const file = await artwork.ensure(appid, { allowNetwork })
       if (!file) return new Response('', { status: 404 })
-      const data = fs.readFileSync(file)
-      return new Response(data, { headers: { 'content-type': 'image/jpeg', 'cache-control': 'max-age=86400' } })
-    } catch {
+      // Serve via net.fetch(file://) — reliable binary streaming with correct
+      // MIME, unlike wrapping a pooled Node Buffer in a Response.
+      return net.fetch(pathToFileURL(file).toString())
+    } catch (e) {
+      log.warn(`artwork ${req.url}: ${e.message}`)
       return new Response('', { status: 404 })
     }
   })

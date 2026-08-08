@@ -2,6 +2,16 @@
 
 All notable changes to SteamSync are documented here.
 
+## [0.1.1] — 2026-08-08
+
+- Fixed cover art: support the newer nested Steam cache layout
+  (`librarycache/<appid>/<hash>/library_capsule.jpg`) and serve art via
+  `net.fetch` so images render reliably (was a broken `Buffer`-in-`Response`).
+- Live per-item sync status: items now show Syncing… → In sync (or Failed) as the
+  run progresses, and the "to sync" total ticks down. Previously the status was a
+  stale scan snapshot.
+- Added a dedicated About page (links, safety promise, system info, updates).
+
 ## [0.1.0] — 2026-08-08
 
 Initial version.

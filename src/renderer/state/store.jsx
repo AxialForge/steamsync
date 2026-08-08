@@ -45,6 +45,18 @@ export function StoreProvider({ children }) {
       if (ev.type === 'detection') setDetection(ev.detection)
       else if (ev.type === 'scan') setScan(ev.result)
       else if (ev.type === 'scan-item') setScan((p) => (p ? { ...p, items: upsert(p.items, ev.item) } : p))
+      else if (ev.type === 'item-status') setScan((p) => {
+        if (!p || !p.items) return p
+        const items = p.items.map((it) => it.id === ev.id
+          ? { ...it, status: ev.status,
+              ...(ev.bytesToCopy != null ? { bytesToCopy: ev.bytesToCopy } : {}),
+              ...(ev.filesToCopy != null ? { filesToCopy: ev.filesToCopy } : {}) }
+          : it)
+        const totals = { ...p.totals,
+          bytesToCopy: items.reduce((s, i) => s + (i.bytesToCopy || 0), 0),
+          filesToCopy: items.reduce((s, i) => s + (i.filesToCopy || 0), 0) }
+        return { ...p, items, totals }
+      })
       else if (ev.type === 'status') setSync((v) => ({ ...v, state: ev.state, running: ev.running }))
       else if (ev.type === 'progress') setSync((v) => ({ ...v, state: 'syncing', running: true, progress: ev }))
       else if (ev.type === 'done') setSync((v) => ({ ...v, state: 'idle', running: false, progress: null, summary: ev.summary }))
@@ -95,6 +107,7 @@ export function StoreProvider({ children }) {
     chooseFolder: (kind) => api.folders.choose(kind),
     openPath: (p) => api.openPath(p),
     reveal: (p) => api.reveal(p),
+    openExternal: (u) => api.openExternal(u),
     checkUpdate: () => api.updater.check(),
     installUpdate: () => api.updater.install(),
     artworkUrl: (appid) => api.artworkUrl(appid)

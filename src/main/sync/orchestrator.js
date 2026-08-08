@@ -126,7 +126,11 @@ async function start({ verify } = {}) {
     itemIndex = i
     const item = items[i]
     const plan = byId.get(item.id)
-    if (plan && plan.filesToCopy === 0) { completedBytes += 0; continue } // already in sync
+    if (plan && plan.filesToCopy === 0) {
+      deps.emit({ type: 'item-status', id: item.id, status: 'in-sync' }) // already up to date
+      continue
+    }
+    deps.emit({ type: 'item-status', id: item.id, status: 'syncing' })
     log.info(`→ ${item.name}`)
     emitProgress()
     try {
@@ -138,10 +142,12 @@ async function start({ verify } = {}) {
       completedBytes += plan ? plan.bytesToCopy : 0
       bytesDone = Math.max(bytesDone, completedBytes) // reconcile drift from output parsing
       copiedItems++
+      deps.emit({ type: 'item-status', id: item.id, status: 'in-sync', bytesToCopy: 0, filesToCopy: 0 })
     } catch (e) {
       if (ac.signal.aborted) { log.warn('Sync cancelled.'); break }
       failedItems++
       log.error(`   failed: ${item.name} — ${e.message}`)
+      deps.emit({ type: 'item-status', id: item.id, status: 'error' })
     }
     emitProgress()
   }

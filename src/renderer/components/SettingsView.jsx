@@ -130,14 +130,6 @@ export function SettingsView() {
         </div>
       </div>
 
-      {/* About */}
-      <div className="card">
-        <h2>About</h2>
-        <div className="setting-row"><div className="txt"><div className="t">Version</div></div><span className="mono">v{info.version}</span></div>
-        <div className="setting-row"><div className="txt"><div className="t">Steam</div><div className="d mono">{detection.steamPath || 'not detected'}</div></div></div>
-        <div className="setting-row"><div className="txt"><div className="t">Engines available</div><div className="d">{engineList.map((e) => `${e.label.split(' ')[0]}: ${e.available ? 'yes' : 'no'}`).join(' · ')}</div></div></div>
-        <div className="setting-row"><div className="txt"><div className="t"><Icon.shield size={14} /> Safety</div><div className="d">SteamSync has no code path that deletes or removes files on the NAS. Deletions there are always your call.</div></div></div>
-      </div>
     </div>
   )
 }

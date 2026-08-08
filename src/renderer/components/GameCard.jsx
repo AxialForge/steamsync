@@ -6,7 +6,9 @@ import { humanBytes } from '../format.js'
 const STATUS = {
   'in-sync': { cls: 'ok', label: 'In sync' },
   'needs-sync': { cls: 'warn', label: 'Needs sync' },
-  'not-backed-up': { cls: 'err', label: 'Not backed up' }
+  'not-backed-up': { cls: 'err', label: 'Not backed up' },
+  'syncing': { cls: 'accent', label: 'Syncing…' },
+  'error': { cls: 'err', label: 'Failed' }
 }
 
 export function GameCard({ game, libLabel, status }) {

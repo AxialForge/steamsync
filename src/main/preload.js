@@ -37,6 +37,7 @@ contextBridge.exposeInMainWorld('api', {
 
   openPath: (p) => ipcRenderer.invoke('path:open', p),
   reveal: (p) => ipcRenderer.invoke('path:reveal', p),
+  openExternal: (u) => ipcRenderer.invoke('url:open', u),
 
   log: { recent: () => ipcRenderer.invoke('log:recent') },
 

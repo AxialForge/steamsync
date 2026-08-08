@@ -7,7 +7,8 @@ const NAV = [
   { id: 'games', label: 'Games', icon: 'games' },
   { id: 'sync', label: 'Sync', icon: 'sync' },
   { id: 'folders', label: 'Folders', icon: 'folder' },
-  { id: 'settings', label: 'Settings', icon: 'settings' }
+  { id: 'settings', label: 'Settings', icon: 'settings' },
+  { id: 'about', label: 'About', icon: 'info' }
 ]
 
 export function Sidebar() {

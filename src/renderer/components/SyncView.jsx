@@ -5,7 +5,15 @@ import { SyncProgress } from './Progress.jsx'
 import { LogPanel } from './LogPanel.jsx'
 import { humanBytes, humanDuration } from '../format.js'
 
-const STATUS_CLS = { 'in-sync': 'ok', 'needs-sync': 'warn', 'not-backed-up': 'err' }
+const STATUS_CLS = { 'in-sync': 'ok', 'needs-sync': 'warn', 'not-backed-up': 'warn', 'syncing': 'accent', 'error': 'err' }
+
+function ItemStatusPill({ it }) {
+  if (it.status === 'syncing') return <span className="pill accent">Syncing…</span>
+  if (it.status === 'in-sync') return <span className="pill ok">in sync</span>
+  if (it.status === 'error') return <span className="pill err">failed</span>
+  if (it.bytesToCopy > 0) return <span className="pill warn">{humanBytes(it.bytesToCopy)} · {it.filesToCopy} files</span>
+  return <span className="pill">—</span>
+}
 
 export function SyncView() {
   const { scan, sync, settings, actions } = useStore()
@@ -48,7 +56,7 @@ export function SyncView() {
         {items.length === 0
           ? <div className="muted" style={{ fontSize: 13 }}>Run a scan to see what differs between your PC and the NAS.</div>
           : <div className="list">
-            {items.slice().sort((a, b) => b.bytesToCopy - a.bytesToCopy).map((it) => (
+            {items.slice().sort((a, b) => a.name.localeCompare(b.name)).map((it) => (
               <div className="list-row" key={it.id}>
                 <span className={'dot ' + (STATUS_CLS[it.status] || '')} />
                 <div className="grow" style={{ minWidth: 0 }}>
@@ -56,9 +64,7 @@ export function SyncView() {
                   <div className="path mono">{it.dest}</div>
                 </div>
                 <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  {it.bytesToCopy > 0
-                    ? <span className="pill warn">{humanBytes(it.bytesToCopy)} · {it.filesToCopy} files</span>
-                    : <span className="pill ok">in sync</span>}
+                  <ItemStatusPill it={it} />
                   {it.orphanCount > 0 && <div className="muted" style={{ fontSize: 11, marginTop: 3 }}>{it.orphanCount} only on NAS</div>}
                 </div>
               </div>
