@@ -10,6 +10,7 @@
     "dev": "node scripts/dev.js",
     "build:renderer": "vite build",
     "preview": "vite preview --port 4173 --strictPort",
+    "make-icon": "node scripts/make-icon.js",
     "start": "npm run build:renderer && electron .",
     "build:win": "npm run build:renderer && electron-builder --win",
     "build:portable": "npm run build:renderer && electron-builder --win portable",

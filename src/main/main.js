@@ -48,9 +48,10 @@ function createWindow() {
   if (DEV_URL) { win.loadURL(DEV_URL); win.webContents.openDevTools({ mode: 'detach' }) }
   else win.loadFile(path.join(__dirname, '../../dist/renderer/index.html'))
 
-  // Close-to-tray (when enabled): hide instead of quitting.
+  // Close-to-tray (when enabled): hide instead of quitting. Only when a tray
+  // actually exists, so the window can never be stranded with no way back.
   win.on('close', (e) => {
-    if (!isQuitting && settings.all().minimizeToTray) { e.preventDefault(); win.hide() }
+    if (!isQuitting && settings.all().minimizeToTray && tray) { e.preventDefault(); win.hide() }
   })
 }
 
@@ -61,7 +62,8 @@ function iconPath() {
 
 function buildTray() {
   const icon = iconPath()
-  tray = new Tray(icon ? nativeImage.createFromPath(icon) : nativeImage.createEmpty())
+  if (!icon) { log.warn('No tray icon (build/icon.ico missing) — running without a tray.'); return }
+  tray = new Tray(nativeImage.createFromPath(icon))
   const menu = Menu.buildFromTemplate([
     { label: 'Open SteamSync', click: () => { win.show(); win.focus() } },
     { label: 'Sync now', click: () => orchestrator.start({ verify: settings.all().verify }).catch((e) => log.error(e.message)) },
