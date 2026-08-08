@@ -4,9 +4,11 @@ All notable changes to SteamSync are documented here.
 
 ## [0.1.1] — 2026-08-08
 
-- Fixed cover art: support the newer nested Steam cache layout
-  (`librarycache/<appid>/<hash>/library_capsule.jpg`) and serve art via
-  `net.fetch` so images render reliably (was a broken `Buffer`-in-`Response`).
+- Fixed cover art (it never loaded): the `ssart://` scheme put the numeric appid
+  in the host, which Chromium parsed as an IPv4 address (`1091500` → `0.16.167.172`).
+  The appid now goes in the path (`ssart://img/<appid>`) and bytes are served with
+  an explicit image content-type. Also handles the newer nested Steam cache layout
+  (`librarycache/<appid>/<hash>/library_capsule.jpg`).
 - Live per-item sync status: items now show Syncing… → In sync (or Failed) as the
   run progresses, and the "to sync" total ticks down. Previously the status was a
   stale scan snapshot.

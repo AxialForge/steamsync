@@ -46,8 +46,9 @@ contextBridge.exposeInMainWorld('api', {
     install: () => ipcRenderer.invoke('updater:install')
   },
 
-  // cover-art URL for a Steam appid
-  artworkUrl: (appid) => `ssart://${appid}`,
+  // cover-art URL for a Steam appid — appid goes in the PATH (see main.js: a
+  // numeric host is parsed as an IPv4 address on a standard scheme).
+  artworkUrl: (appid) => `ssart://img/${appid}`,
 
   onEvent: sub('event'),
   onLog: sub('log'),

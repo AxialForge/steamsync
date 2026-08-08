@@ -1,9 +1,8 @@
 'use strict'
 
-const { app, BrowserWindow, Tray, Menu, protocol, nativeImage, net } = require('electron')
+const { app, BrowserWindow, Tray, Menu, protocol, nativeImage } = require('electron')
 const path = require('node:path')
 const fs = require('node:fs')
-const { pathToFileURL } = require('node:url')
 
 const settings = require('./settings')
 const log = require('./util/logger')
@@ -94,13 +93,15 @@ async function boot() {
   // Serve cover art.
   protocol.handle('ssart', async (req) => {
     try {
-      const appid = new URL(req.url).hostname
+      // The appid is in the PATH (ssart://img/<appid>), NOT the host: on a
+      // standard scheme Chromium parses a numeric host (e.g. 1091500) as an
+      // IPv4 address, so a host-based appid never resolves.
+      const appid = new URL(req.url).pathname.replace(/^\/+/, '')
       const allowNetwork = settings.all().showArtwork !== false
       const file = await artwork.ensure(appid, { allowNetwork })
       if (!file) return new Response('', { status: 404 })
-      // Serve via net.fetch(file://) — reliable binary streaming with correct
-      // MIME, unlike wrapping a pooled Node Buffer in a Response.
-      return net.fetch(pathToFileURL(file).toString())
+      const bytes = new Uint8Array(fs.readFileSync(file)) // fresh, exact-length copy
+      return new Response(bytes, { headers: { 'content-type': 'image/jpeg', 'cache-control': 'max-age=86400' } })
     } catch (e) {
       log.warn(`artwork ${req.url}: ${e.message}`)
       return new Response('', { status: 404 })

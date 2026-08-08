@@ -109,9 +109,20 @@ Two: **dark** (default) and **light**, driven by CSS custom properties in
 - **rclone uses `copy`, never `sync`.** `rclone sync` deletes on the destination;
   `rclone copy` does not. Do not "upgrade" it to sync.
 - **Cover art is served over a custom `ssart://` scheme**, registered privileged
-  *before* `app.ready` and handled after. `<img src="ssart://<appid>">`. This
-  avoids `file://`-origin blocking that would otherwise break images under the
-  Vite dev origin. Don't switch images back to `file://`.
+  *before* `app.ready` and handled after. This avoids `file://`-origin blocking
+  that would break images under the Vite dev origin. Don't switch to `file://`.
+  - **The appid goes in the PATH, not the host: `ssart://img/<appid>`.** The
+    scheme is registered `standard: true`, and on a standard scheme Chromium
+    parses an all-numeric host as an **IPv4 address** — `ssart://1091500` became
+    `ssart://0.16.167.172/`, so every cover 404'd and art NEVER loaded (the v0.1.0
+    bug). Parse with `new URL(req.url).pathname.replace(/^\/+/, '')`.
+  - **Return the bytes as a fresh `Uint8Array` with an explicit
+    `content-type: image/jpeg`.** `net.fetch(file://…)` did not render in `<img>`,
+    and a pooled Node `Buffer` in a `Response` is unreliable. `test/electron-artwork.js`
+    exercises both `ensure()` and a real renderer `<img>` and locks this in.
+  - **Newer Steam nests art**: `librarycache/<appid>/<hash>/library_capsule.jpg`
+    (older clients used flat `<appid>_library_600x900.jpg`). `artwork.findLocal`
+    searches both; CDN is the fallback.
 - **The preload bridge (`window.api`) is the only renderer global.** Don't add
   others; don't reach into Node from the renderer.
 - **`electron-updater` is required lazily** inside `updater.configure()` — it reads

@@ -9,6 +9,7 @@ const assert = require('node:assert')
 const { detectSteam } = require('../src/main/steam/detect')
 const robocopy = require('../src/main/sync/engines/robocopy')
 const { scanItems } = require('../src/main/sync/scanner')
+const orchestrator = require('../src/main/sync/orchestrator')
 
 async function main() {
   let pass = 0, fail = 0
@@ -59,6 +60,25 @@ async function main() {
   ok('item in sync now', scan.items[0].status === 'in-sync')
 
   fs.rmSync(base, { recursive: true, force: true })
+
+  console.log('\n[4] Orchestrator emits live per-item status')
+  const baseB = fs.mkdtempSync(path.join(os.tmpdir(), 'steamsync-orch-'))
+  const srcB = path.join(baseB, 's'); const dstB = path.join(baseB, 'd')
+  fs.mkdirSync(srcB, { recursive: true })
+  fs.writeFileSync(path.join(srcB, 'f.bin'), Buffer.alloc(4096, 3))
+  const events = []
+  orchestrator.configure({
+    getSettings: () => ({ engine: 'robocopy', threads: 4, nasRoot: '', folderPairs: [{ id: 't', source: srcB, dest: dstB }] }),
+    getDetection: () => ({ libraries: [] }),
+    emit: (e) => events.push(e)
+  })
+  await orchestrator.start({ verify: false })
+  const statuses = events.filter((e) => e.type === 'item-status' && e.id === 'pair:t').map((e) => e.status)
+  ok('emits "syncing" status', statuses.includes('syncing'))
+  ok('emits "in-sync" status', statuses.includes('in-sync'))
+  ok('emits a "done" summary', events.some((e) => e.type === 'done'))
+  ok('orchestrator copied the file', fs.existsSync(path.join(dstB, 'f.bin')))
+  fs.rmSync(baseB, { recursive: true, force: true })
 
   console.log(`\n=== ${pass} passed, ${fail} failed ===`)
   process.exit(fail ? 1 : 0)
