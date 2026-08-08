@@ -34,7 +34,7 @@ function createWindow() {
     height: 780,
     minWidth: 900,
     minHeight: 600,
-    backgroundColor: '#1b1c1e',
+    backgroundColor: '#0a0b0d',
     title: 'SteamSync',
     icon: iconPath(),
     webPreferences: {
