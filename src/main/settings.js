@@ -22,6 +22,9 @@ const DEFAULTS = {
   excludedAppids: [],            // per-game opt-out (default: back everything up)
   folderPairs: [],               // [{ id, label, source, dest }]
 
+  excludeJunk: true,             // skip redistributables (appid 228980) + _CommonRedist dirs
+  notifications: true,           // Windows toast on sync complete/failure
+
   minimizeToTray: true,          // close/minimize hides to tray instead of quitting
   launchOnLogin: false,          // start with Windows
   checkUpdatesOnLaunch: true,    // auto-check GitHub Releases at startup

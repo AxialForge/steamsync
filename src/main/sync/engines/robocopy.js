@@ -40,6 +40,7 @@ function baseArgs(opts) {
     const ipg = Math.max(1, Math.round(64000 / opts.bandwidthKbps))
     if (Number.isFinite(ipg) && ipg > 0) args.push(`/IPG:${ipg}`)
   }
+  if (opts.excludeDirs && opts.excludeDirs.length) args.push('/XD', ...opts.excludeDirs)
   return args
 }
 
@@ -107,6 +108,7 @@ async function copy(item, opts, { onProgress, onLog, signal } = {}) {
 async function listDiff(source, dest, opts = {}) {
   if (!fs.existsSync(source)) return { bytesToCopy: 0, filesToCopy: 0, orphans: [], orphanCount: 0 }
   const args = [source, dest, '/E', '/XO', '/L', '/X', '/R:0', '/W:0', '/NP', '/NDL', '/NJH', '/BYTES']
+  if (opts.excludeDirs && opts.excludeDirs.length) args.push('/XD', ...opts.excludeDirs)
   const orphans = []
   const res = await run(args, {
     signal: opts.signal,

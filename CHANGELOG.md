@@ -2,6 +2,16 @@
 
 All notable changes to SteamSync are documented here.
 
+## [0.2.0] — 2026-08-08
+
+- Safety guards: refuse to sync any item whose source and destination overlap
+  (would recurse the copy), and warn before a run if the NAS reports less free
+  space than the sync needs.
+- Skip junk (on by default): don't back up "Steamworks Common Redistributables"
+  (appid 228980) or `_CommonRedist` folders — they're re-created on install.
+  Toggle in Settings.
+- Windows desktop notifications when a sync finishes or fails (toggle in Settings).
+
 ## [0.1.1] — 2026-08-08
 
 - Fixed cover art (it never loaded): the `ssart://` scheme put the numeric appid

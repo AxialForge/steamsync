@@ -8,7 +8,7 @@ const robocopy = require('./engines/robocopy')
 
 // Diff preview: what would be copied, and what exists only on the NAS (orphans).
 // Uses robocopy /L (fast, authoritative on Windows). Never copies anything.
-async function scanItems(items, { signal, onItem } = {}) {
+async function scanItems(items, { signal, onItem, excludeDirs } = {}) {
   const results = []
   let bytesToCopy = 0
   let filesToCopy = 0
@@ -17,7 +17,7 @@ async function scanItems(items, { signal, onItem } = {}) {
 
   for (const item of items) {
     if (signal && signal.aborted) break
-    const d = await robocopy.listDiff(item.source, item.dest, { signal })
+    const d = await robocopy.listDiff(item.source, item.dest, { signal, excludeDirs })
     // manifests / extra files also count toward "to copy"
     for (const ex of item.extraFiles || []) {
       try {

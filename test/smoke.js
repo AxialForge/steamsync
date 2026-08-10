@@ -10,6 +10,7 @@ const { detectSteam } = require('../src/main/steam/detect')
 const robocopy = require('../src/main/sync/engines/robocopy')
 const { scanItems } = require('../src/main/sync/scanner')
 const orchestrator = require('../src/main/sync/orchestrator')
+const { pathsOverlap } = require('../src/main/util/safety')
 
 async function main() {
   let pass = 0, fail = 0
@@ -79,6 +80,21 @@ async function main() {
   ok('emits a "done" summary', events.some((e) => e.type === 'done'))
   ok('orchestrator copied the file', fs.existsSync(path.join(dstB, 'f.bin')))
   fs.rmSync(baseB, { recursive: true, force: true })
+
+  console.log('\n[5] Safety guards + junk exclusion')
+  ok('overlap: dest inside source', pathsOverlap('C:\\Games\\Steam', 'C:\\Games\\Steam\\backup'))
+  ok('overlap: equal paths', pathsOverlap('C:\\a', 'c:\\a\\'))
+  ok('no overlap: siblings', !pathsOverlap('C:\\Games', 'D:\\Backup'))
+  ok('no false prefix (a\\b vs a\\bc)', !pathsOverlap('C:\\a\\b', 'C:\\a\\bc'))
+  const baseC = fs.mkdtempSync(path.join(os.tmpdir(), 'steamsync-junk-'))
+  const srcC = path.join(baseC, 's'); const dstC = path.join(baseC, 'd')
+  fs.mkdirSync(path.join(srcC, '_CommonRedist', 'vc'), { recursive: true })
+  fs.writeFileSync(path.join(srcC, 'game.exe'), 'x')
+  fs.writeFileSync(path.join(srcC, '_CommonRedist', 'vc', 'setup.exe'), 'y')
+  await robocopy.copy({ source: srcC, dest: dstC, name: 'j', extraFiles: [] }, { threads: 2, excludeDirs: ['_CommonRedist'] }, {})
+  ok('junk: game.exe copied', fs.existsSync(path.join(dstC, 'game.exe')))
+  ok('junk: _CommonRedist excluded', !fs.existsSync(path.join(dstC, '_CommonRedist')))
+  fs.rmSync(baseC, { recursive: true, force: true })
 
   console.log(`\n=== ${pass} passed, ${fail} failed ===`)
   process.exit(fail ? 1 : 0)

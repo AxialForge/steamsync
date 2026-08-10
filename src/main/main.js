@@ -1,8 +1,9 @@
 'use strict'
 
-const { app, BrowserWindow, Tray, Menu, protocol, nativeImage } = require('electron')
+const { app, BrowserWindow, Tray, Menu, protocol, nativeImage, Notification } = require('electron')
 const path = require('node:path')
 const fs = require('node:fs')
+const { humanBytes } = require('./util/bytes')
 
 const settings = require('./settings')
 const log = require('./util/logger')
@@ -26,7 +27,23 @@ let isQuitting = false
 
 const DEV_URL = process.env.VITE_DEV_SERVER_URL
 
-function emitEvent(payload) { if (win && !win.isDestroyed()) win.webContents.send('event', payload) }
+function emitEvent(payload) {
+  if (win && !win.isDestroyed()) win.webContents.send('event', payload)
+  if (payload.type === 'done' && settings.all().notifications) notifyDone(payload.summary)
+}
+
+function notifyDone(sum) {
+  try {
+    if (!Notification.isSupported()) return
+    const failed = sum && sum.failedItems
+    const body = sum
+      ? (sum.cancelled ? 'Sync cancelled.' : `${sum.copiedItems} synced${failed ? `, ${failed} failed` : ''} · ${humanBytes(sum.bytesCopied)}`)
+      : 'Sync finished.'
+    const n = new Notification({ title: failed ? 'SteamSync — completed with errors' : 'SteamSync — sync complete', body, icon: iconPath() })
+    n.on('click', () => { if (win) { win.show(); win.focus() } })
+    n.show()
+  } catch { /* notifications are best-effort */ }
+}
 
 function createWindow() {
   win = new BrowserWindow({

@@ -24,14 +24,16 @@ async function needsCopy(src, dest) {
   return false
 }
 
-async function* walkFiles(dir, rel = '') {
+async function* walkFiles(dir, rel = '', exclude = new Set()) {
   let entries
   try { entries = await fsp.readdir(dir, { withFileTypes: true }) } catch { return }
   for (const e of entries) {
     const abs = path.join(dir, e.name)
     const r = rel ? path.join(rel, e.name) : e.name
-    if (e.isDirectory()) yield* walkFiles(abs, r)
-    else if (e.isFile()) yield { abs, rel: r }
+    if (e.isDirectory()) {
+      if (exclude.has(e.name.toLowerCase())) continue // skip _CommonRedist etc.
+      yield* walkFiles(abs, r, exclude)
+    } else if (e.isFile()) yield { abs, rel: r }
   }
 }
 
@@ -72,8 +74,9 @@ async function copyOne(src, dest, opts, onProgress, signal) {
 
 async function copy(item, opts, { onProgress, onLog, signal } = {}) {
   const concurrency = Math.min(32, Math.max(1, opts.threads || 8))
+  const exclude = new Set((opts.excludeDirs || []).map((d) => d.toLowerCase()))
   const queue = []
-  for await (const f of walkFiles(item.source)) queue.push(f)
+  for await (const f of walkFiles(item.source, '', exclude)) queue.push(f)
 
   let index = 0
   let filesCopied = 0

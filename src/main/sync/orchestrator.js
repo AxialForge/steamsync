@@ -3,7 +3,12 @@
 const path = require('node:path')
 const engines = require('./engines')
 const { scanItems, verifyItems } = require('./scanner')
+const { pathsOverlap, freeSpace } = require('../util/safety')
+const { humanBytes } = require('../util/bytes')
 const log = require('../util/logger')
+
+const JUNK_APPIDS = new Set(['228980']) // Steamworks Common Redistributables
+const JUNK_DIRS = ['_CommonRedist', 'CommonRedist']
 
 // Coordinates the whole run: builds the concrete item list from settings +
 // detected Steam libraries, scans for a diff, then copies with the chosen
@@ -32,6 +37,7 @@ function buildItems() {
       const destLib = path.win32.join(s.nasRoot, lib.label)
       for (const g of lib.games) {
         if (excluded.has(String(g.appid))) continue
+        if (s.excludeJunk && JUNK_APPIDS.has(String(g.appid))) continue
         const dest = path.win32.join(destLib, 'steamapps', 'common', g.installdir)
         items.push({
           type: 'game', id: `${lib.label}:${g.appid}`, appid: String(g.appid), name: g.name,
@@ -49,16 +55,34 @@ function buildItems() {
   return items
 }
 
+function excludeDirs() { return deps.getSettings().excludeJunk ? JUNK_DIRS : [] }
+
+// Drop any item whose source and destination overlap — copying a folder into
+// itself would recurse. Reported, never silently skipped.
+function guard(items) {
+  const safe = []
+  for (const it of items) {
+    if (pathsOverlap(it.source, it.dest)) {
+      log.error(`Skipping "${it.name}": source and destination overlap — ${it.source} ↔ ${it.dest}`)
+      deps.emit({ type: 'item-status', id: it.id, status: 'error' })
+      continue
+    }
+    safe.push(it)
+  }
+  return safe
+}
+
 async function scan() {
   if (isRunning()) return lastScan
   ac = new AbortController()
   setState('scanning')
   log.info('Scanning for differences…')
   try {
-    const items = buildItems()
+    const items = guard(buildItems())
     if (!items.length) log.warn('Nothing to scan — set your NAS folder in Settings, or add a folder pair.')
     const result = await scanItems(items, {
       signal: ac.signal,
+      excludeDirs: excludeDirs(),
       onItem: (r) => deps.emit({ type: 'scan-item', item: r })
     })
     lastScan = { ...result, at: Date.now() }
@@ -77,22 +101,31 @@ async function scan() {
 async function start({ verify } = {}) {
   if (isRunning()) return
   const s = deps.getSettings()
-  const items = buildItems()
+  const items = guard(buildItems())
   if (!items.length) { log.warn('Nothing to sync. Set a NAS folder or add a folder pair in Settings.'); return }
 
   ac = new AbortController()
   const engine = engines.get(s.engine)
-  const opts = { threads: s.threads || 16, bandwidthKbps: s.bandwidthKbps || null, rclonePath: s.rclonePath || null }
+  const opts = { threads: s.threads || 16, bandwidthKbps: s.bandwidthKbps || null, rclonePath: s.rclonePath || null, excludeDirs: excludeDirs() }
 
   // Pre-scan for accurate progress totals.
   setState('scanning')
   log.info(`Preparing sync with ${engine.label}…`)
-  const scanResult = await scanItems(items, { signal: ac.signal })
+  const scanResult = await scanItems(items, { signal: ac.signal, excludeDirs: opts.excludeDirs })
   lastScan = { ...scanResult, at: Date.now() }
   deps.emit({ type: 'scan', result: lastScan })
   const byId = new Map(scanResult.items.map((r) => [r.id, r]))
   const bytesTotal = scanResult.totals.bytesToCopy
   const filesTotal = scanResult.totals.filesToCopy
+
+  // Free-space guard (non-blocking — statfs can be unreliable over SMB, so a
+  // null reading is treated as "unknown", never as "full").
+  if (s.nasRoot) {
+    const free = await freeSpace(s.nasRoot)
+    if (free != null && bytesTotal > free) {
+      log.warn(`Low space: need ${humanBytes(bytesTotal)} but the NAS reports only ${humanBytes(free)} free — the sync may fail partway.`)
+    }
+  }
 
   setState('syncing')
   const startedAt = Date.now()

@@ -17,8 +17,8 @@ const stub = {
     get: async () => ({
       theme: 'dark', nasRoot: '', engine: 'robocopy', threads: 16, verify: false,
       bandwidthKbps: null, rclonePath: null, autoSync: false, safetyRescanMinutes: 30,
-      excludedAppids: [], folderPairs: [], minimizeToTray: true, launchOnLogin: false,
-      checkUpdatesOnLaunch: true, showArtwork: true
+      excludedAppids: [], folderPairs: [], excludeJunk: true, notifications: true,
+      minimizeToTray: true, launchOnLogin: false, checkUpdatesOnLaunch: true, showArtwork: true
     }),
     set: async (p) => ({ ...(await stub.settings.get()), ...p })
   },

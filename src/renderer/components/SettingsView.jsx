@@ -76,6 +76,9 @@ export function SettingsView() {
         <Row title="Verify with checksums" desc="After copying, hash every file on both sides to confirm. Thorough but slow.">
           <Toggle checked={s.verify} onChange={(v) => set({ verify: v })} />
         </Row>
+        <Row title="Skip redistributables & junk" desc="Don't back up “Steamworks Common Redistributables” or _CommonRedist folders — they’re re-created on install, so skipping saves space.">
+          <Toggle checked={s.excludeJunk} onChange={(v) => set({ excludeJunk: v })} />
+        </Row>
         <Row title="Limit speed" desc="Throttle transfers so gaming/streaming isn't affected. Off = full speed.">
           <div className="inline">
             {s.bandwidthKbps != null && <input className="input" type="number" min="1" style={{ width: 90 }} value={Math.max(1, Math.round(s.bandwidthKbps / 1024))} onChange={(e) => set({ bandwidthKbps: Math.max(1, +e.target.value) * 1024 })} />}
@@ -109,6 +112,9 @@ export function SettingsView() {
         </Row>
         <Row title="Show game artwork" desc="Title cards from Steam's cache (falls back to the CDN).">
           <Toggle checked={s.showArtwork} onChange={(v) => set({ showArtwork: v })} />
+        </Row>
+        <Row title="Desktop notifications" desc="Show a Windows notification when a sync finishes or fails.">
+          <Toggle checked={s.notifications} onChange={(v) => set({ notifications: v })} />
         </Row>
         <Row title="Minimize to tray" desc="Closing the window keeps SteamSync running in the tray (needed for auto-sync).">
           <Toggle checked={s.minimizeToTray} onChange={(v) => set({ minimizeToTray: v })} />
