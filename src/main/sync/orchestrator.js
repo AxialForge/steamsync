@@ -4,7 +4,7 @@ const path = require('node:path')
 const engines = require('./engines')
 const { scanItems, verifyItems } = require('./scanner')
 const { pathsOverlap, freeSpace } = require('../util/safety')
-const { humanBytes } = require('../util/bytes')
+const { humanBytes, humanDuration } = require('../util/bytes')
 const log = require('../util/logger')
 
 const JUNK_APPIDS = new Set(['228980']) // Steamworks Common Redistributables
@@ -100,17 +100,42 @@ async function scan() {
 
 async function start({ verify } = {}) {
   if (isRunning()) return
-  const s = deps.getSettings()
   const items = guard(buildItems())
   if (!items.length) { log.warn('Nothing to sync. Set a NAS folder or add a folder pair in Settings.'); return }
+  return runItems(items, { verify, label: 'Sync', verb: 'synced' })
+}
 
+// Reverse-copy selected games from the NAS back to a local library. Like sync,
+// it is additive and NEVER deletes on the destination (here, the PC). The UI
+// confirms before calling this.
+async function restore({ games = [], targetRoot } = {}) {
+  if (isRunning()) return
+  if (!targetRoot) { log.error('Restore needs a target library.'); return }
+  const items = guard(games.map((g) => ({
+    type: 'restore', id: `restore:${g.appid}`, appid: String(g.appid), name: g.name,
+    source: g.nasCommon,
+    dest: path.win32.join(targetRoot, 'steamapps', 'common', g.installdir),
+    extraFiles: g.nasManifest
+      ? [{ src: g.nasManifest, dest: path.win32.join(targetRoot, 'steamapps', g.manifestName || `appmanifest_${g.appid}.acf`) }]
+      : []
+  })))
+  if (!items.length) { log.warn('Nothing to restore.'); return }
+  log.info(`Restoring ${items.length} game(s) to ${targetRoot}…`)
+  return runItems(items, { verify: false, label: 'Restore', verb: 'restored' })
+}
+
+// Shared pipeline: scan → free-space guard → copy loop → optional verify → done.
+// Used by both sync (PC→NAS) and restore (NAS→PC); direction is just the items'
+// source/dest, and no engine ever deletes on the destination.
+async function runItems(items, { verify, label = 'Sync', verb = 'synced' } = {}) {
+  const s = deps.getSettings()
   ac = new AbortController()
   const engine = engines.get(s.engine)
   const opts = { threads: s.threads || 16, bandwidthKbps: s.bandwidthKbps || null, rclonePath: s.rclonePath || null, excludeDirs: excludeDirs() }
 
   // Pre-scan for accurate progress totals.
   setState('scanning')
-  log.info(`Preparing sync with ${engine.label}…`)
+  log.info(`Preparing ${label.toLowerCase()} with ${engine.label}…`)
   const scanResult = await scanItems(items, { signal: ac.signal, excludeDirs: opts.excludeDirs })
   lastScan = { ...scanResult, at: Date.now() }
   deps.emit({ type: 'scan', result: lastScan })
@@ -118,12 +143,13 @@ async function start({ verify } = {}) {
   const bytesTotal = scanResult.totals.bytesToCopy
   const filesTotal = scanResult.totals.filesToCopy
 
-  // Free-space guard (non-blocking — statfs can be unreliable over SMB, so a
-  // null reading is treated as "unknown", never as "full").
-  if (s.nasRoot) {
-    const free = await freeSpace(s.nasRoot)
+  // Free-space guard on the destination volume (non-blocking — statfs can be
+  // unreliable over SMB, so a null reading is treated as "unknown", never "full").
+  const destRoot = items[0] && path.win32.parse(items[0].dest).root
+  if (destRoot) {
+    const free = await freeSpace(destRoot)
     if (free != null && bytesTotal > free) {
-      log.warn(`Low space: need ${humanBytes(bytesTotal)} but the NAS reports only ${humanBytes(free)} free — the sync may fail partway.`)
+      log.warn(`Low space: need ${humanBytes(bytesTotal)} but ${destRoot} reports only ${humanBytes(free)} free — may fail partway.`)
     }
   }
 
@@ -152,10 +178,10 @@ async function start({ verify } = {}) {
     })
   }
 
-  log.ok(`Syncing ${items.length} item(s), ${filesTotal} file(s) / ${require('../util/bytes').humanBytes(bytesTotal)}.`)
+  log.ok(`${label}: ${items.length} item(s), ${filesTotal} file(s) / ${humanBytes(bytesTotal)}.`)
 
   for (let i = 0; i < items.length; i++) {
-    if (ac.signal.aborted) { log.warn('Sync cancelled.'); break }
+    if (ac.signal.aborted) { log.warn(`${label} cancelled.`); break }
     itemIndex = i
     const item = items[i]
     const plan = byId.get(item.id)
@@ -177,7 +203,7 @@ async function start({ verify } = {}) {
       copiedItems++
       deps.emit({ type: 'item-status', id: item.id, status: 'in-sync', bytesToCopy: 0, filesToCopy: 0 })
     } catch (e) {
-      if (ac.signal.aborted) { log.warn('Sync cancelled.'); break }
+      if (ac.signal.aborted) { log.warn(`${label} cancelled.`); break }
       failedItems++
       log.error(`   failed: ${item.name} — ${e.message}`)
       deps.emit({ type: 'item-status', id: item.id, status: 'error' })
@@ -206,7 +232,7 @@ async function start({ verify } = {}) {
     verify: verifyResult ? { checked: verifyResult.checked, mismatches: verifyResult.mismatches.length } : null
   }
   deps.emit({ type: 'done', summary })
-  log.ok(`Sync finished in ${require('../util/bytes').humanDuration(summary.durationMs)} — ${copiedItems} synced, ${failedItems} failed.`)
+  log.ok(`${label} finished in ${humanDuration(summary.durationMs)} — ${copiedItems} ${verb}, ${failedItems} failed.`)
   setState('idle')
   return summary
 }
@@ -215,4 +241,4 @@ function cancel() {
   if (ac) { ac.abort(); log.warn('Cancelling…') }
 }
 
-module.exports = { configure, scan, start, cancel, isRunning, getState, buildItems }
+module.exports = { configure, scan, start, restore, cancel, isRunning, getState, buildItems }

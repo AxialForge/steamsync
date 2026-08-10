@@ -5,6 +5,7 @@ import { Sidebar } from './Sidebar.jsx'
 import { Dashboard } from './Dashboard.jsx'
 import { GamesView } from './GamesView.jsx'
 import { SyncView } from './SyncView.jsx'
+import { RestoreView } from './RestoreView.jsx'
 import { FoldersView } from './FoldersView.jsx'
 import { SettingsView } from './SettingsView.jsx'
 import { AboutView } from './AboutView.jsx'
@@ -33,6 +34,7 @@ export function App() {
           {view === 'dashboard' && <Dashboard />}
           {view === 'games' && <GamesView />}
           {view === 'sync' && <SyncView />}
+          {view === 'restore' && <RestoreView />}
           {view === 'folders' && <FoldersView />}
           {view === 'settings' && <SettingsView />}
           {view === 'about' && <AboutView />}

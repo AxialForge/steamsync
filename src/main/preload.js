@@ -33,6 +33,11 @@ contextBridge.exposeInMainWorld('api', {
     state: () => ipcRenderer.invoke('sync:state')
   },
 
+  restore: {
+    scan: () => ipcRenderer.invoke('restore:scan'),
+    start: (payload) => ipcRenderer.invoke('restore:start', payload)
+  },
+
   folders: { choose: (kind) => ipcRenderer.invoke('folders:choose', kind) },
 
   openPath: (p) => ipcRenderer.invoke('path:open', p),

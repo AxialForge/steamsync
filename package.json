@@ -1,6 +1,6 @@
 {
   "name": "steamsync",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "One-way, master-is-local mirror that backs up your Steam library (and any folder) to a NAS — fast, and never deletes on the destination.",
   "author": "AxialForge <37514365+AxialForge@users.noreply.github.com>",
   "license": "MIT",

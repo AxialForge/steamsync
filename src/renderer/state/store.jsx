@@ -104,6 +104,8 @@ export function StoreProvider({ children }) {
     scanNow: () => api.sync.scan(),
     startSync: (opts) => api.sync.start(opts),
     cancel: () => api.sync.cancel(),
+    restoreScan: () => api.restore.scan(),
+    restoreStart: (payload) => api.restore.start(payload),
     chooseFolder: (kind) => api.folders.choose(kind),
     openPath: (p) => api.openPath(p),
     reveal: (p) => api.reveal(p),

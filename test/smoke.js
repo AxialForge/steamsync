@@ -11,6 +11,7 @@ const robocopy = require('../src/main/sync/engines/robocopy')
 const { scanItems } = require('../src/main/sync/scanner')
 const orchestrator = require('../src/main/sync/orchestrator')
 const { pathsOverlap } = require('../src/main/util/safety')
+const { scanNasBackups } = require('../src/main/steam/nasscan')
 
 async function main() {
   let pass = 0, fail = 0
@@ -95,6 +96,25 @@ async function main() {
   ok('junk: game.exe copied', fs.existsSync(path.join(dstC, 'game.exe')))
   ok('junk: _CommonRedist excluded', !fs.existsSync(path.join(dstC, '_CommonRedist')))
   fs.rmSync(baseC, { recursive: true, force: true })
+
+  console.log('\n[6] Restore (NAS -> PC): nasscan + reverse copy')
+  const baseD = fs.mkdtempSync(path.join(os.tmpdir(), 'steamsync-restore-'))
+  const nasRoot = path.join(baseD, 'nas')
+  const nasSteamapps = path.join(nasRoot, 'F-Test', 'steamapps')
+  fs.mkdirSync(path.join(nasSteamapps, 'common', 'GameX'), { recursive: true })
+  fs.writeFileSync(path.join(nasSteamapps, 'common', 'GameX', 'game.dat'), Buffer.alloc(2048, 9))
+  fs.writeFileSync(path.join(nasSteamapps, 'appmanifest_999.acf'),
+    '"AppState"\n{\n\t"appid"\t"999"\n\t"name"\t"Test Game"\n\t"installdir"\t"GameX"\n\t"SizeOnDisk"\t"2048"\n}\n')
+  const backups = scanNasBackups(nasRoot)
+  ok('nasscan finds one library', backups.length === 1)
+  ok('nasscan finds the game', backups[0] && backups[0].games.length === 1 && backups[0].games[0].name === 'Test Game')
+  const g = backups[0].games[0]
+  const targetRoot = path.join(baseD, 'PCLib')
+  orchestrator.configure({ getSettings: () => ({ engine: 'robocopy', threads: 4 }), getDetection: () => ({ libraries: [] }), emit: () => {} })
+  await orchestrator.restore({ games: [g], targetRoot })
+  ok('restore copied the game folder', fs.existsSync(path.join(targetRoot, 'steamapps', 'common', 'GameX', 'game.dat')))
+  ok('restore copied the manifest', fs.existsSync(path.join(targetRoot, 'steamapps', 'appmanifest_999.acf')))
+  fs.rmSync(baseD, { recursive: true, force: true })
 
   console.log(`\n=== ${pass} passed, ${fail} failed ===`)
   process.exit(fail ? 1 : 0)

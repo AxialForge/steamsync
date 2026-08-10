@@ -6,6 +6,7 @@ const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
   { id: 'games', label: 'Games', icon: 'games' },
   { id: 'sync', label: 'Sync', icon: 'sync' },
+  { id: 'restore', label: 'Restore', icon: 'download' },
   { id: 'folders', label: 'Folders', icon: 'folder' },
   { id: 'settings', label: 'Settings', icon: 'settings' },
   { id: 'about', label: 'About', icon: 'info' }

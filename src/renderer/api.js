@@ -34,6 +34,7 @@ const stub = {
     detect: async () => stub.steam.get()
   },
   sync: { scan: async () => ({ items: [], totals: { bytesToCopy: 0, filesToCopy: 0, orphanCount: 0, itemCount: 0 } }), start: async () => ({ started: true }), cancel: async () => true, state: async () => ({ state: 'idle', running: false, lastScan: null }) },
+  restore: { scan: async () => [{ label: 'F-SteamLibrary', games: demoGames.map((g) => ({ ...g, nasCommon: 'X', nasManifest: 'Y', manifestName: `appmanifest_${g.appid}.acf` })) }], start: async () => ({ started: true }) },
   folders: { choose: async () => null },
   openPath: async () => {}, reveal: async () => {}, openExternal: async () => {},
   log: { recent: async () => [] },

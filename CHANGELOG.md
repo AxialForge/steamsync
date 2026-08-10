@@ -2,6 +2,16 @@
 
 All notable changes to SteamSync are documented here.
 
+## [0.3.0] — 2026-08-09
+
+- Restore (NAS → PC): a new Restore tab scans your NAS backups — including games no
+  longer installed locally — lets you choose which to bring back and into which
+  local library, and reverse-copies them behind a confirmation step. Additive: it
+  never deletes or downgrades files on your PC. After a restore, use Steam's
+  "Verify integrity" if a game doesn't immediately show as installed.
+- Internals: the copy pipeline (scan → guard → copy → verify → progress) is now
+  shared by both sync and restore.
+
 ## [0.2.0] — 2026-08-08
 
 - Safety guards: refuse to sync any item whose source and destination overlap

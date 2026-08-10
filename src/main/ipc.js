@@ -4,6 +4,7 @@ const { ipcMain, dialog, shell, app } = require('electron')
 const settings = require('./settings')
 const orchestrator = require('./sync/orchestrator')
 const engines = require('./sync/engines')
+const { scanNasBackups } = require('./steam/nasscan')
 const updater = require('./updater')
 const log = require('./util/logger')
 
@@ -42,6 +43,14 @@ function registerIpc(ctx) {
   })
   handle('sync:cancel', () => { orchestrator.cancel(); return true })
   handle('sync:state', () => orchestrator.getState())
+
+  // Restore (NAS -> PC)
+  handle('restore:scan', () => scanNasBackups(settings.all().nasRoot))
+  handle('restore:start', (payload) => {
+    if (orchestrator.isRunning()) return { started: false, reason: 'busy' }
+    orchestrator.restore(payload || {}).catch((e) => log.error('Restore error: ' + e.message))
+    return { started: true }
+  })
 
   handle('folders:choose', async (kind) => {
     const w = ctx.getWindow()
